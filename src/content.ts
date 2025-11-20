@@ -150,24 +150,40 @@ const scrape = () => {
 
   // 优化：仅发送新数据 (增量更新)，大幅减少 IPC 通信开销
   if (newTweets.length > 0) {
-    chrome.runtime.sendMessage({
-      type: 'SCRAPED_DATA',
-      payload: newTweets
-    }).catch(err => {
-      console.warn('Failed to send scraped data:', err);
-      // Retry logic for failed batch
-      retryCount++;
-      if (retryCount < MAX_RETRIES) {
-        setTimeout(() => {
-          chrome.runtime.sendMessage({
-            type: 'SCRAPED_DATA',
-            payload: newTweets
-          }).then(() => {
-            retryCount = 0; 
-          });
-        }, 1000);
+    const sendData = async () => {
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'SCRAPED_DATA',
+          payload: newTweets
+        });
+        retryCount = 0;
+      } catch (err: any) {
+        const msg = err?.message || '';
+        
+        // 1. Extension context invalidated: 插件更新或重载，脚本失效
+        if (msg.includes('Extension context invalidated')) {
+          console.log('Extension context invalidated. Stopping scraper.');
+          stopScraping();
+          return;
+        }
+
+        // 2. Connection error: SidePanel 未打开，忽略此错误
+        if (msg.includes('Could not establish connection') || 
+            msg.includes('Receiving end does not exist')) {
+          // 数据已在 scrapedTweets 内存中，SidePanel 打开时会主动请求
+          return;
+        }
+
+        // 3. 其他错误：重试
+        console.warn('Failed to send scraped data:', err);
+        retryCount++;
+        if (retryCount < MAX_RETRIES) {
+          setTimeout(sendData, 1000);
+        }
       }
-    });
+    };
+    
+    sendData();
   }
 };
 
@@ -179,13 +195,14 @@ const startScraping = () => {
   // Initial scrape
   scrape();
 
-  // 优化：减少间隔时间，提高抓取速度
+  // 优化：极速模式，使用 instant 滚动和更短的间隔
   scrollInterval = window.setInterval(() => {
     scrape();
-    // 优化：更快的滚动，增加滚动距离
-    const scrollAmount = Math.floor(Math.random() * 600) + 500;
-    window.scrollBy({ top: scrollAmount, behavior: 'smooth' });
-  }, 1000); // 从2秒减少到1秒，提高抓取速度
+    // 优化：移除 smooth 动画，使用 instant 直接跳转，大幅提升连续抓取速度
+    // 增加基础滚动距离，确保能跨过已抓取的内容
+    const scrollAmount = Math.floor(Math.random() * 400) + 800; 
+    window.scrollBy({ top: scrollAmount, behavior: 'instant' });
+  }, 600); // 间隔缩短到 600ms，配合 instant 滚动实现倍速抓取
 };
 
 const stopScraping = () => {

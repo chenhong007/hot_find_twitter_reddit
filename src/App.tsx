@@ -13,6 +13,8 @@ function App() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [queryDate, setQueryDate] = useState(new Date().toISOString().split('T')[0]);
   
+  const [notification, setNotification] = useState<{show: boolean, message: string} | null>(null);
+  
   // 列宽状态
   const [colWidths, setColWidths] = useState({
     index: 50,
@@ -200,13 +202,15 @@ function App() {
 
   const handleCopyContent = async () => {
     if (sortedTweets.length === 0) return;
-    const allContent = sortedTweets.map(t => t.content).join('\n\n');
+    const allContent = sortedTweets.map(t => t.content).join('\n--------------\n');
     try {
       await navigator.clipboard.writeText(allContent);
-      alert(`已复制 ${sortedTweets.length} 条推文内容`);
+      setNotification({ show: true, message: `已复制 ${sortedTweets.length} 条内容` });
+      setTimeout(() => setNotification(null), 2000);
     } catch (err) {
       console.error('Failed to copy: ', err);
-      alert('复制失败');
+      setNotification({ show: true, message: '复制失败' });
+      setTimeout(() => setNotification(null), 2000);
     }
   };
 
@@ -388,13 +392,18 @@ function App() {
   const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans relative">
+      {notification && notification.show && (
+        <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-md shadow-lg z-50 text-sm font-medium backdrop-blur-sm transition-all duration-300 animate-fade-in">
+          {notification.message}
+        </div>
+      )}
       {/* Dashboard Header Area */}
       <div className="bg-white px-3 py-2">
         <div className="flex justify-between items-center mb-2 border-b border-black pb-2">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-gray-900 tracking-tight">爆文列表</h1>
-              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">v1.2.2</span>
+              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">v1.3.0</span>
             </div>
 
             <div className="flex items-center gap-2">
