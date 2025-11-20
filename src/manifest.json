@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Twitter Scraper",
+  "version": "1.2.2",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://twitter.com/*",
+    "https://x.com/*"
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://twitter.com/*",
+        "https://x.com/*"
+      ],
+      "js": [
+        "src/content.ts"
+      ]
+    }
+  ],
+  "action": {
+    "default_title": "Open Twitter Scraper",
+    "default_icon": "icon.svg"
+  },
+  "icons": {
+    "16": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
+  }
+}
+
