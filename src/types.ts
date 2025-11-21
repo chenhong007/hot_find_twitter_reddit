@@ -1,4 +1,5 @@
 export interface Tweet {
+  source: 'twitter' | 'substack';
   id: string;
   url: string;
   author: {

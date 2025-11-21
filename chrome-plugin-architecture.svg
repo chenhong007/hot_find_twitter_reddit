@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 2000">
+  <defs>
+    <style>
+      .title { font: bold 28px sans-serif; fill: #1a1a1a; }
+      .subtitle { font: bold 20px sans-serif; fill: #2563eb; }
+      .section-title { font: bold 16px sans-serif; fill: #1a1a1a; }
+      .text { font: 14px sans-serif; fill: #4a4a4a; }
+      .small-text { font: 12px sans-serif; fill: #666; }
+      .code { font: 12px monospace; fill: #d73a49; }
+      .box { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; }
+      .manifest-box { fill: #fef3c7; stroke: #fbbf24; stroke-width: 2; }
+      .background-box { fill: #dbeafe; stroke: #3b82f6; stroke-width: 2; }
+      .content-box { fill: #dcfce7; stroke: #22c55e; stroke-width: 2; }
+      .ui-box { fill: #fce7f3; stroke: #ec4899; stroke-width: 2; }
+      .arrow { fill: none; stroke: #64748b; stroke-width: 2; marker-end: url(#arrowhead); }
+      .arrow-important { fill: none; stroke: #dc2626; stroke-width: 3; marker-end: url(#arrowhead-red); }
+      .arrow-data { fill: none; stroke: #16a34a; stroke-width: 2.5; marker-end: url(#arrowhead-green); }
+      .number-circle { fill: #3b82f6; stroke: #1e40af; stroke-width: 2; }
+      .number-text { font: bold 16px sans-serif; fill: white; text-anchor: middle; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#64748b" />
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#dc2626" />
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#16a34a" />
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="700" y="40" class="title" text-anchor="middle">Chrome 爬虫插件核心工作原理</text>
+  <text x="700" y="65" class="small-text" text-anchor="middle">以 Twitter Scraper 为例 - 完整数据流向解析</text>
+
+  <!-- Phase 1: Manifest -->
+  <rect x="50" y="100" width="1300" height="180" class="manifest-box" rx="8"/>
+  <circle cx="80" cy="130" r="18" class="number-circle"/>
+  <text x="80" y="137" class="number-text">1</text>
+  <text x="110" y="137" class="subtitle">Manifest 配置 (插件入口)</text>
+  
+  <text x="80" y="165" class="section-title">manifest.json - 插件的"身份证"</text>
+  <text x="100" y="190" class="text">• manifest_version: 3 (Chrome扩展V3规范)</text>
+  <text x="100" y="210" class="text">• permissions: ["activeTab", "scripting", "sidePanel", "storage"]</text>
+  <text x="100" y="230" class="text">• host_permissions: ["https://twitter.com/*", "https://x.com/*"] - 授权访问的网站</text>
+  <text x="100" y="250" class="text">• content_scripts: 定义注入脚本 (src/content.ts)</text>
+  <text x="100" y="270" class="text">• background: 后台服务 (src/background.ts) + side_panel: UI面板</text>
+
+  <!-- Phase 2: Background Script -->
+  <rect x="50" y="310" width="630" height="220" class="background-box" rx="8"/>
+  <circle cx="80" cy="340" r="18" class="number-circle"/>
+  <text x="80" y="347" class="number-text">2</text>
+  <text x="110" y="347" class="subtitle">Background Script (后台管理)</text>
+  
+  <text x="80" y="375" class="section-title">src/background.ts - 全局调度中心</text>
+  <text x="100" y="400" class="text">功能：管理Side Panel的显示/隐藏</text>
+  <text x="100" y="425" class="code">chrome.tabs.onUpdated.addListener()</text>
+  <text x="100" y="445" class="small-text">→ 监听标签页URL变化</text>
+  <text x="100" y="465" class="small-text">→ 如果是twitter.com/x.com: 启用Side Panel</text>
+  <text x="100" y="485" class="small-text">→ 如果是其他网站: 禁用Side Panel</text>
+  <text x="100" y="510" class="text">生命周期：始终运行在浏览器后台</text>
+
+  <!-- Phase 3: Content Script -->
+  <rect x="720" y="310" width="630" height="340" class="content-box" rx="8"/>
+  <circle cx="750" cy="340" r="18" class="number-circle"/>
+  <text x="750" y="347" class="number-text">3</text>
+  <text x="780" y="347" class="subtitle">Content Script (数据采集核心)</text>
+  
+  <text x="750" y="375" class="section-title">src/content.ts - 注入到网页的脚本</text>
+  <text x="770" y="400" class="text">关键变量：</text>
+  <text x="790" y="420" class="code">let isScraping = false</text>
+  <text x="790" y="440" class="code">let scrapedTweets = new Map&lt;string, Tweet&gt;()</text>
+  <text x="790" y="460" class="code">const scraper = createScraper(window.location.hostname)</text>
+  
+  <text x="770" y="490" class="text">核心流程：</text>
+  <text x="790" y="510" class="small-text">① 监听消息 chrome.runtime.onMessage.addListener()</text>
+  <text x="790" y="530" class="small-text">② 收到START_SCRAPE → 启动定时器 (每600ms)</text>
+  <text x="790" y="550" class="small-text">③ 调用 scraper.scrape() 解析DOM</text>
+  <text x="790" y="570" class="small-text">④ 自动滚动页面 window.scrollBy()</text>
+  <text x="790" y="590" class="small-text">⑤ 去重后发送数据 chrome.runtime.sendMessage()</text>
+  <text x="790" y="610" class="small-text">⑥ 收到STOP_SCRAPE → 停止定时器</text>
+  <text x="790" y="635" class="text" font-weight="bold">生命周期：随网页加载而注入，随网页关闭而销毁</text>
+
+  <!-- Arrow: Background to Content -->
+  <path d="M 365 420 L 710 420" class="arrow"/>
+  <text x="500" y="415" class="small-text">管理生命周期</text>
+
+  <!-- Phase 4: Scraper -->
+  <rect x="720" y="680" width="630" height="280" class="content-box" rx="8"/>
+  <circle cx="750" cy="710" r="18" class="number-circle"/>
+  <text x="750" y="717" class="number-text">4</text>
+  <text x="780" y="717" class="subtitle">Scraper 解析器 (数据提取)</text>
+  
+  <text x="750" y="745" class="section-title">src/scrapers/TwitterScraper.ts</text>
+  <text x="770" y="770" class="text">核心方法：scrape(existingIds?: Set&lt;string&gt;): Tweet[]</text>
+  
+  <text x="770" y="800" class="text">数据提取步骤：</text>
+  <text x="790" y="820" class="code">1. document.querySelectorAll('article[data-testid="tweet"]')</text>
+  <text x="790" y="840" class="small-text">   → 找到页面上所有推文DOM节点</text>
+  <text x="790" y="865" class="code">2. 从每个article中提取：</text>
+  <text x="810" y="885" class="small-text">• 作者信息 (name, handle)</text>
+  <text x="810" y="905" class="small-text">• 时间戳 &lt;time datetime&gt;</text>
+  <text x="810" y="925" class="small-text">• 推文内容 div[data-testid="tweetText"]</text>
+  <text x="810" y="945" class="small-text">• 互动数据 (likes, reposts, replies, views)</text>
+
+  <!-- Arrow: Content to Scraper -->
+  <path d="M 1035 650 L 1035 680" class="arrow-important"/>
+  <text x="1045" y="670" class="small-text" fill="#dc2626">调用scrape()</text>
+
+  <!-- Phase 5: Side Panel UI -->
+  <rect x="50" y="680" width="630" height="360" class="ui-box" rx="8"/>
+  <circle cx="80" cy="710" r="18" class="number-circle"/>
+  <text x="80" y="717" class="number-text">5</text>
+  <text x="110" y="717" class="subtitle">Side Panel UI (用户界面)</text>
+  
+  <text x="80" y="745" class="section-title">src/sidepanel.tsx + App.tsx (React应用)</text>
+  <text x="100" y="775" class="text">UI组件架构：</text>
+  <text x="120" y="795" class="small-text">• Header: 控制按钮（开始/停止、导出、清空）</text>
+  <text x="120" y="815" class="small-text">• StatsCard: 统计数据（总数、点赞数、转发数等）</text>
+  <text x="120" y="835" class="small-text">• FilterControls: 过滤阈值设置</text>
+  <text x="120" y="855" class="small-text">• TweetTable: 数据表格展示</text>
+  
+  <text x="100" y="885" class="text">核心Hook：useTweets()</text>
+  <text x="120" y="905" class="code">const [tweets, setTweets] = useState&lt;Tweet[]&gt;([])</text>
+  <text x="120" y="925" class="small-text">监听消息：chrome.runtime.onMessage.addListener()</text>
+  <text x="120" y="945" class="small-text">收到SCRAPED_DATA → 更新tweets状态 → 触发UI重渲染</text>
+  
+  <text x="100" y="975" class="text">用户操作：</text>
+  <text x="120" y="995" class="small-text">点击"开始" → 发送START_SCRAPE消息到Content Script</text>
+  <text x="120" y="1015" class="small-text">点击"停止" → 发送STOP_SCRAPE消息</text>
+
+  <!-- Phase 6: Data Flow -->
+  <rect x="50" y="1070" width="1300" height="280" class="box" rx="8" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="80" cy="1100" r="18" class="number-circle"/>
+  <text x="80" y="1107" class="number-text">6</text>
+  <text x="110" y="1107" class="subtitle" fill="#16a34a">完整数据流向</text>
+  
+  <!-- Data Flow Diagram -->
+  <g transform="translate(100, 1130)">
+    <!-- Box 1: DOM -->
+    <rect x="0" y="0" width="180" height="80" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="5"/>
+    <text x="90" y="30" class="section-title" text-anchor="middle">网页 DOM</text>
+    <text x="90" y="50" class="small-text" text-anchor="middle">Twitter推文列表</text>
+    <text x="90" y="70" class="code" text-anchor="middle">&lt;article&gt;</text>
+    
+    <!-- Box 2: Scraper -->
+    <rect x="230" y="0" width="180" height="80" fill="#dcfce7" stroke="#22c55e" stroke-width="2" rx="5"/>
+    <text x="320" y="30" class="section-title" text-anchor="middle">Scraper解析</text>
+    <text x="320" y="50" class="small-text" text-anchor="middle">querySelectorAll()</text>
+    <text x="320" y="70" class="small-text" text-anchor="middle">提取字段 → Tweet对象</text>
+    
+    <!-- Box 3: Content Script -->
+    <rect x="460" y="0" width="180" height="80" fill="#dcfce7" stroke="#22c55e" stroke-width="2" rx="5"/>
+    <text x="550" y="25" class="section-title" text-anchor="middle">Content Script</text>
+    <text x="550" y="45" class="small-text" text-anchor="middle">去重 (Map)</text>
+    <text x="550" y="60" class="code" text-anchor="middle">sendMessage()</text>
+    <text x="550" y="75" class="small-text" text-anchor="middle">SCRAPED_DATA</text>
+    
+    <!-- Box 4: Message Bus -->
+    <rect x="690" y="0" width="180" height="80" fill="#e0e7ff" stroke="#6366f1" stroke-width="2" rx="5"/>
+    <text x="780" y="30" class="section-title" text-anchor="middle">Chrome消息总线</text>
+    <text x="780" y="50" class="code" text-anchor="middle">runtime.sendMessage</text>
+    <text x="780" y="70" class="code" text-anchor="middle">runtime.onMessage</text>
+    
+    <!-- Box 5: React State -->
+    <rect x="920" y="0" width="180" height="80" fill="#fce7f3" stroke="#ec4899" stroke-width="2" rx="5"/>
+    <text x="1010" y="30" class="section-title" text-anchor="middle">React State</text>
+    <text x="1010" y="50" class="code" text-anchor="middle">setTweets()</text>
+    <text x="1010" y="70" class="small-text" text-anchor="middle">状态更新</text>
+    
+    <!-- Arrows -->
+    <path d="M 180 40 L 230 40" class="arrow-data"/>
+    <path d="M 410 40 L 460 40" class="arrow-data"/>
+    <path d="M 640 40 L 690 40" class="arrow-data"/>
+    <path d="M 870 40 L 920 40" class="arrow-data"/>
+    
+    <!-- Arrow labels -->
+    <text x="205" y="30" class="small-text" text-anchor="middle" fill="#16a34a">①</text>
+    <text x="435" y="30" class="small-text" text-anchor="middle" fill="#16a34a">②</text>
+    <text x="665" y="30" class="small-text" text-anchor="middle" fill="#16a34a">③</text>
+    <text x="895" y="30" class="small-text" text-anchor="middle" fill="#16a34a">④</text>
+    
+    <!-- Final Box: UI -->
+    <rect x="370" y="120" width="350" height="60" fill="#fce7f3" stroke="#ec4899" stroke-width="2" rx="5"/>
+    <text x="545" y="145" class="section-title" text-anchor="middle">UI 渲染更新</text>
+    <text x="545" y="165" class="small-text" text-anchor="middle">TweetTable 显示数据 → 用户可见</text>
+    
+    <path d="M 1010 80 L 1010 100 L 545 100 L 545 120" class="arrow-data"/>
+    <text x="775" y="95" class="small-text" fill="#16a34a">⑤ 触发渲染</text>
+  </g>
+
+  <!-- Phase 7: Key Techniques -->
+  <rect x="50" y="1380" width="630" height="300" class="box" rx="8"/>
+  <text x="80" y="1415" class="subtitle">关键技术要点</text>
+  
+  <text x="80" y="1445" class="section-title">1. DOM 选择器策略</text>
+  <text x="100" y="1465" class="code">SELECTORS.TWITTER.ARTICLE = 'article[data-testid="tweet"]'</text>
+  <text x="100" y="1485" class="small-text">→ 使用data-testid是因为Twitter用它标识功能元素</text>
+  
+  <text x="80" y="1515" class="section-title">2. 数据去重机制</text>
+  <text x="100" y="1535" class="code">scrapedTweets = new Map&lt;string, Tweet&gt;()</text>
+  <text x="100" y="1555" class="small-text">→ 使用推文URL作为唯一ID，Map自动去重</text>
+  
+  <text x="80" y="1585" class="section-title">3. 内存保护</text>
+  <text x="100" y="1605" class="code">MAX_TWEETS = 3000</text>
+  <text x="100" y="1625" class="small-text">→ 超过限制后删除旧数据，防止内存溢出</text>
+  
+  <text x="80" y="1655" class="section-title">4. 自动滚动加载</text>
+  <text x="100" y="1675" class="code">window.scrollBy({ top: 800-1200, behavior: 'instant' })</text>
+
+  <!-- Phase 8: Message Types -->
+  <rect x="720" y="1380" width="630" height="300" class="box" rx="8"/>
+  <text x="750" y="1415" class="subtitle">消息类型（Chrome通信协议）</text>
+  
+  <text x="750" y="1445" class="section-title">UI → Content Script</text>
+  <text x="770" y="1465" class="code">START_SCRAPE</text>
+  <text x="770" y="1485" class="small-text">启动抓取</text>
+  <text x="770" y="1505" class="code">STOP_SCRAPE</text>
+  <text x="770" y="1525" class="small-text">停止抓取</text>
+  <text x="770" y="1545" class="code">CLEAR_DATA</text>
+  <text x="770" y="1565" class="small-text">清空数据</text>
+  <text x="770" y="1585" class="code">REQUEST_FULL_DATA</text>
+  <text x="770" y="1605" class="small-text">请求所有已抓取数据</text>
+  
+  <text x="750" y="1635" class="section-title">Content Script → UI</text>
+  <text x="770" y="1655" class="code">SCRAPED_DATA + payload: Tweet[]</text>
+  <text x="770" y="1675" class="small-text">发送新抓取的推文数据</text>
+
+  <!-- Summary -->
+  <rect x="50" y="1710" width="1300" height="260" class="box" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="3"/>
+  <text x="700" y="1745" class="subtitle" text-anchor="middle" fill="#16a34a">🎯 开发自己的Chrome爬虫插件 - 关键步骤</text>
+  
+  <text x="80" y="1780" class="section-title">第1步：创建 manifest.json</text>
+  <text x="100" y="1800" class="small-text">定义permissions (activeTab, scripting)、host_permissions (目标网站)、content_scripts (注入脚本)</text>
+  
+  <text x="80" y="1830" class="section-title">第2步：编写 content.ts (核心抓取逻辑)</text>
+  <text x="100" y="1850" class="small-text">• 使用 document.querySelector() 定位目标元素 (分析网页DOM结构是关键！)</text>
+  <text x="100" y="1870" class="small-text">• 提取文本、属性、链接等数据</text>
+  <text x="100" y="1890" class="small-text">• 通过 chrome.runtime.sendMessage() 发送数据到UI</text>
+  
+  <text x="80" y="1920" class="section-title">第3步：构建 UI (React/Vue/原生HTML)</text>
+  <text x="100" y="1940" class="small-text">• 监听消息 chrome.runtime.onMessage.addListener()</text>
+  <text x="100" y="1960" class="small-text">• 展示数据、提供导出功能</text>
+
+</svg>

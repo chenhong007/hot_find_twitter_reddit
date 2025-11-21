@@ -1,8 +1,10 @@
 # Twitter 爆文列表 - Chrome 扩展
 
-> 版本：v1.3.0
+> 版本：v1.5.0
 
 一个用于抓取和分析 Twitter/X 平台爆文数据的 Chrome 浏览器扩展。
+
+![Twitter Scraper Screenshot](./twitter爬取神器.png)
 
 ## ✨ 功能特性
 
@@ -95,6 +97,6 @@ npm run preview
 
 ---
 
-**当前版本**: v1.3.0  
+**当前版本**: v1.5.0  
 **最后更新**: 2025-11-20
 

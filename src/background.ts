@@ -6,13 +6,16 @@ chrome.sidePanel
 const setupSidePanel = async (tabId: number, urlString: string) => {
   try {
     const url = new URL(urlString);
-    // 检查是否是 Twitter 或 X 域名
+    // 检查是否是 Twitter 或 X 或 Substack 域名
     const isTwitter = url.hostname === 'twitter.com' || 
                       url.hostname === 'x.com' || 
                       url.hostname.endsWith('.twitter.com') || 
                       url.hostname.endsWith('.x.com');
+    
+    const isSubstack = url.hostname === 'substack.com' || 
+                       url.hostname.endsWith('.substack.com');
 
-    if (isTwitter) {
+    if (isTwitter || isSubstack) {
       await chrome.sidePanel.setOptions({
         tabId,
         path: 'src/sidepanel.html',
