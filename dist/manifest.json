@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Twitter Scraper",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "permissions": [
     "activeTab",
     "scripting",
@@ -10,8 +10,7 @@
   ],
   "host_permissions": [
     "https://twitter.com/*",
-    "https://x.com/*",
-    "https://substack.com/*"
+    "https://x.com/*"
   ],
   "side_panel": {
     "default_path": "src/sidepanel.html"
@@ -23,12 +22,11 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.ts-wAxVbpT0.js"
+        "assets/content.ts-DInBB0jQ.js"
       ],
       "matches": [
         "https://twitter.com/*",
-        "https://x.com/*",
-        "https://substack.com/*"
+        "https://x.com/*"
       ]
     }
   ],
@@ -44,12 +42,11 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "https://substack.com/*",
         "https://twitter.com/*",
         "https://x.com/*"
       ],
       "resources": [
-        "assets/content.ts-wAxVbpT0.js"
+        "assets/content.ts-DInBB0jQ.js"
       ],
       "use_dynamic_url": false
     }

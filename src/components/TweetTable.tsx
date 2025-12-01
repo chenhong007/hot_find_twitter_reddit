@@ -35,12 +35,12 @@ const ResizableTh = ({
     onResize: (e: React.MouseEvent, id: string) => void
   }) => (
     <div 
-      className={`py-1.5 px-2 text-center border-r border-gray-400 relative group ${sortable ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''} flex-shrink-0 ${isSorted ? 'bg-gray-300' : ''}`}
-      style={{ width }}
+      className={`py-1.5 px-1 text-center border-r border-gray-400 relative group ${sortable ? 'cursor-pointer hover:text-blue-600 transition-colors' : ''} ${isSorted ? 'bg-gray-300' : ''}`}
+      style={{ width, minWidth: width }}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
     >
-      <div className="truncate flex items-center justify-center gap-1" title={onDoubleClick ? "双击复制整列内容" : undefined}>
+      <div className="truncate flex items-center justify-center gap-0.5" title={onDoubleClick ? "双击复制整列内容" : undefined}>
         {label}
         {isSorted && (
           <span className="text-[10px]">
@@ -66,32 +66,49 @@ export const TweetTable: React.FC<TweetTableProps> = ({
 }) => {
   const [ref, bounds] = useMeasure();
 
-  // 列宽状态
-  const [colWidths, setColWidths] = useState({
-    index: 50,
-    source: 60,
-    link: 80,
-    author: 100,
-    time: 90,
-    content: 400,
-    replies: 70,
-    reposts: 70,
-    likes: 70,
-    views: 70
+  // 列宽比例状态 - 使用百分比自适应布局
+  const [colRatios, setColRatios] = useState({
+    index: 5,     // 5%
+    source: 7,    // 7%
+    link: 6,      // 6%
+    author: 12,   // 12%
+    time: 10,     // 10%
+    content: 30,  // 30%
+    replies: 7,   // 7%
+    reposts: 7,   // 7%
+    likes: 8,     // 8%
+    views: 8      // 8%
   });
+  
+  // 计算实际列宽（基于容器宽度）
+  const containerWidth = bounds.width || 600;
+  const colWidths = {
+    index: Math.floor(containerWidth * colRatios.index / 100),
+    source: Math.floor(containerWidth * colRatios.source / 100),
+    link: Math.floor(containerWidth * colRatios.link / 100),
+    author: Math.floor(containerWidth * colRatios.author / 100),
+    time: Math.floor(containerWidth * colRatios.time / 100),
+    content: Math.floor(containerWidth * colRatios.content / 100),
+    replies: Math.floor(containerWidth * colRatios.replies / 100),
+    reposts: Math.floor(containerWidth * colRatios.reposts / 100),
+    likes: Math.floor(containerWidth * colRatios.likes / 100),
+    views: Math.floor(containerWidth * colRatios.views / 100)
+  };
 
   // 拖拽调整列宽的引用
-  const resizingRef = useRef<{ column: keyof typeof colWidths; startX: number; startWidth: number } | null>(null);
+  const resizingRef = useRef<{ column: keyof typeof colRatios; startX: number; startRatio: number } | null>(null);
 
   // 列宽调整事件处理
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!resizingRef.current) return;
-      const { column, startX, startWidth } = resizingRef.current;
+      if (!resizingRef.current || !containerWidth) return;
+      const { column, startX, startRatio } = resizingRef.current;
       const diff = e.clientX - startX;
-      setColWidths(prev => ({
+      // Convert pixel diff to percentage diff
+      const ratioDiff = (diff / containerWidth) * 100;
+      setColRatios(prev => ({
         ...prev,
-        [column]: Math.max(40, startWidth + diff) // 最小宽度 40px
+        [column]: Math.max(3, Math.min(50, startRatio + ratioDiff)) // 3%-50% range
       }));
     };
 
@@ -108,15 +125,15 @@ export const TweetTable: React.FC<TweetTableProps> = ({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [containerWidth]);
 
   const startResize = (e: React.MouseEvent, column: string) => {
     e.preventDefault();
     e.stopPropagation(); // 防止触发排序
     resizingRef.current = {
-      column: column as keyof typeof colWidths,
+      column: column as keyof typeof colRatios,
       startX: e.clientX,
-      startWidth: colWidths[column as keyof typeof colWidths]
+      startRatio: colRatios[column as keyof typeof colRatios]
     };
     document.body.style.cursor = 'col-resize';
   };
@@ -146,56 +163,54 @@ export const TweetTable: React.FC<TweetTableProps> = ({
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const tweet = tweets[index];
     return (
-      <div style={style} className="flex hover:bg-gray-50 transition-colors border-b border-gray-300 text-xs">
-        <div style={{ width: colWidths.index }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0">
+      <div style={style} className="flex hover:bg-gray-50 transition-colors border-b border-gray-300 text-xs w-full">
+        <div style={{ width: colWidths.index, minWidth: colWidths.index }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate">
           {index + 1}
         </div>
-        <div style={{ width: colWidths.source }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0 capitalize">
+        <div style={{ width: colWidths.source, minWidth: colWidths.source }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate capitalize">
           {tweet.source || 'twitter'}
         </div>
-        <div style={{ width: colWidths.link }} className="py-1.5 px-2 text-center border-r border-gray-300 flex-shrink-0">
+        <div style={{ width: colWidths.link, minWidth: colWidths.link }} className="py-1.5 px-1 text-center border-r border-gray-300">
           <a href={tweet.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium truncate block">
             查看
           </a>
         </div>
-        <div style={{ width: colWidths.author }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0" title={tweet.author.name}>
+        <div style={{ width: colWidths.author, minWidth: colWidths.author }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate" title={tweet.author.name}>
           {tweet.author.name}
         </div>
-        <div style={{ width: colWidths.time }} className="py-1.5 px-2 text-center border-r border-gray-300 truncate flex-shrink-0">
+        <div style={{ width: colWidths.time, minWidth: colWidths.time }} className="py-1.5 px-1 text-center border-r border-gray-300 truncate">
           {getRelativeTime(tweet.timestamp)}
         </div>
-        <div style={{ width: colWidths.content }} className="py-1.5 px-2 border-r border-gray-300 flex-shrink-0">
-           <div className="line-clamp-2 break-all" title={tweet.content}>
+        <div style={{ width: colWidths.content, minWidth: colWidths.content }} className="py-1.5 px-1 border-r border-gray-300 overflow-hidden">
+           <div className="line-clamp-2 break-all text-left" title={tweet.content}>
              {tweet.content}
            </div>
         </div>
-        <div style={{ width: colWidths.replies }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0">
+        <div style={{ width: colWidths.replies, minWidth: colWidths.replies }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate">
           {formatNumber(tweet.metrics.replies, true)}
         </div>
-        <div style={{ width: colWidths.reposts }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0">
+        <div style={{ width: colWidths.reposts, minWidth: colWidths.reposts }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate">
           {formatNumber(tweet.metrics.reposts, true)}
         </div>
-        <div style={{ width: colWidths.likes }} className="py-1.5 px-2 text-center border-r border-gray-300 font-medium truncate flex-shrink-0">
+        <div style={{ width: colWidths.likes, minWidth: colWidths.likes }} className="py-1.5 px-1 text-center border-r border-gray-300 font-medium truncate">
           {formatNumber(tweet.metrics.likes, true)}
         </div>
-        <div style={{ width: colWidths.views }} className="py-1.5 px-2 text-center font-medium truncate flex-shrink-0">
+        <div style={{ width: colWidths.views, minWidth: colWidths.views }} className="py-1.5 px-1 text-center font-medium truncate">
           {tweet.metrics.views ? formatNumber(tweet.metrics.views, true) : '-'}
         </div>
       </div>
     );
   };
 
-  const totalWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
-
   return (
       <div className="flex-1 overflow-hidden px-3 pb-2 flex flex-col">
         <div className="bg-white border border-gray-900 rounded overflow-hidden flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex bg-gray-200 text-gray-900 font-bold border-b border-gray-900 text-xs" style={{ width: totalWidth }}>
-             <div style={{ width: colWidths.index }} className="py-1.5 px-2 text-center border-r border-gray-400 flex-shrink-0">#</div>
-             <div style={{ width: colWidths.source }} className="py-1.5 px-2 text-center border-r border-gray-400 flex-shrink-0">来源</div>
-             <div style={{ width: colWidths.link }} className="py-1.5 px-2 text-center border-r border-gray-400 flex-shrink-0">链接</div>
-             <div style={{ width: colWidths.author }} className="py-1.5 px-2 text-center border-r border-gray-400 flex-shrink-0">作者</div>
+          <div className="flex bg-gray-200 text-gray-900 font-bold border-b border-gray-900 text-xs w-full">
+             <div style={{ width: colWidths.index, minWidth: colWidths.index }} className="py-1.5 px-1 text-center border-r border-gray-400">#</div>
+             <div style={{ width: colWidths.source, minWidth: colWidths.source }} className="py-1.5 px-1 text-center border-r border-gray-400">来源</div>
+             <div style={{ width: colWidths.link, minWidth: colWidths.link }} className="py-1.5 px-1 text-center border-r border-gray-400">链接</div>
+             <div style={{ width: colWidths.author, minWidth: colWidths.author }} className="py-1.5 px-1 text-center border-r border-gray-400">作者</div>
                 <ResizableTh 
                   id="time" 
                   label="发布时间" 
@@ -260,7 +275,7 @@ export const TweetTable: React.FC<TweetTableProps> = ({
                 height={bounds.height} 
                 itemCount={tweets.length}
                 itemSize={44} // Approx row height
-                width={Math.max(totalWidth, bounds.width)}
+                width={bounds.width || 600}
                 className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
               >
                 {Row}

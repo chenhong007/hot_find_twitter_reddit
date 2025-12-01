@@ -150,7 +150,6 @@ export class SubstackScraper implements PlatformScraper {
       let likes = 0;
       let replies = 0;
       let reposts = 0;
-      let views: number | null = null;
 
       // Metrics Strategy:
       // 1. Find potential metric containers (usually footer)

@@ -49,6 +49,8 @@ function Dashboard() {
   const { 
     sortField, 
     sortOrder,
+    searchKeyword,
+    setSearchKeyword,
     thresholds, 
     setThresholds, 
     sortedTweets, 
@@ -108,6 +110,8 @@ function Dashboard() {
       <FilterControls 
         thresholds={thresholds}
         setThresholds={setThresholds}
+        searchKeyword={searchKeyword}
+        setSearchKeyword={setSearchKeyword}
       />
 
       <TweetTable 
